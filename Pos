@@ -1,0 +1,13 @@
+class Pos
+{
+	byte i , j;
+	Pos(byte row , byte col)
+	{
+		i = row;
+		j = col;
+	}
+	public String toString()
+	{
+		return "( " + i + " , " + j + ")";
+	}
+}
