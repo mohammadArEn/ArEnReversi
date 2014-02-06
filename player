@@ -1,0 +1,17 @@
+import java.awt.Color;
+
+public class Player
+{
+	String name;
+	int score;
+	int wins;
+	Color color;
+	
+	Player(String Name , Color C)
+	{
+		name  = Name;
+		color = C;
+		score =0;
+		wins = 0;
+	}
+}
