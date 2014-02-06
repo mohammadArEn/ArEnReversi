@@ -1,0 +1,260 @@
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.GridLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.util.ArrayList;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+
+public class Reversi
+{
+	private JFrame mainFrame;
+	private JPanel flowPanel , infoPanel;
+	private JButton[][] spot;
+	private byte[][] owner;
+	private byte turn;
+	private Player p1 , p2;	
+	private void init()
+	{
+		p1 = new Player("Mohammad" , Color.red);
+		p2 = new Player("Arman" , Color.blue);
+		
+		mainFrame = new JFrame("ArEn Reversi");
+		mainFrame.setSize(512 , 712);
+		mainFrame.setLocationRelativeTo(null);
+		mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		mainFrame.setVisible(true);
+		mainFrame.setResizable(false);
+		
+		flowPanel = new JPanel();
+		flowPanel.setLayout(null);
+		flowPanel.setSize(512, 512);
+		flowPanel.setBackground(Color.white);
+		flowPanel.setLayout(new GridLayout(8,8));
+		
+		infoPanel = new JPanel(new BorderLayout());
+		
+		turn = 1;
+		owner = new byte[8][8];
+		spot = new JButton[8][8];
+		
+		for(int i = 0 ; i < 8 ; i++)
+		{
+			for(int j = 0 ; j < 8 ; j++)
+			{
+				owner[i][j] = 0;
+				spot[i][j] = new JButton();
+				spot[i][j].setSize(32, 32);
+				spot[i][j].setBackground(Color.white);
+				spot[i][j].setText(i + "," + j );
+				spot[i][j].addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseClicked(MouseEvent e)
+				{
+					boolean goodButtonClicked = false;
+					byte c = (byte)(( e.getYOnScreen() - flowPanel.getLocationOnScreen().y) / 64);
+					byte d = (byte)(( e.getXOnScreen() - flowPanel.getLocationOnScreen().x) / 64);
+					
+					if(owner[c][d] == 0 && e.getButton() == MouseEvent.BUTTON1)
+					{
+						for(byte k = 0 ; k < 8 ; k++)
+						{
+							for(byte l = 0 ; l < 8 ; l++)
+							{
+								if(owner[k][l] == turn)
+								{
+									if(isLegal(owner , new Pos(k,l) , new Pos(c , d) ) )
+									{
+										goodButtonClicked = true;
+										connect(owner , new Pos(k,l) , new Pos(c,d));
+									}
+								}
+							}
+						}					
+						if(goodButtonClicked)
+						{
+							if(turn == 1 ) turn = 2 ;
+							else if(turn == 2 ) turn = 1 ;
+						}
+					}
+					
+				}
+				});
+				
+				flowPanel.add(spot[i][j]);
+				
+			}
+		}
+		
+		owner = new byte[8][8];
+		
+		for(int i = 0 ; i < 8 ; i++)
+		{
+			for(int j = 0 ; j < 8 ; j++)
+			{
+				owner[i][j] = 0;
+			}
+		}
+		
+		owner[3][3] = 2;
+		owner[3][4] = 1;
+		owner[4][3] = 1;
+		owner[4][4] = 2;
+		
+		mainFrame.getContentPane().add(flowPanel);
+		mainFrame.getContentPane().add(infoPanel);
+		
+		updateBoard();
+		
+	}
+	Reversi()
+	{
+		init();
+	}
+	private void updateBoard()
+	{
+		for(int i = 0 ; i < 8 ; i++)
+		{
+			for(int j = 0 ; j < 8 ; j++)
+			{
+				if(owner[i][j] == 1)
+				{
+					spot[i][j].setBackground(Color.red);
+				}
+				if(owner[i][j] == 2)
+				{
+					spot[i][j].setBackground(Color.blue); 
+				}
+			}
+		}
+	}
+	private boolean isLegal(byte arr[][] , Pos start , Pos end)
+	{
+		boolean hasCorrectPos = false;
+		boolean isAnyOfMyNutsBetween = false;
+		boolean hasEmptySpaceBetween = false;
+		boolean areNeighbors = false;
+		byte k = start.i , l = start.j ;
+		
+		if(start.i == end.i || start.j == end.j || Math.abs(start.i - end.i) == Math.abs(start.j - end.j) )
+			hasCorrectPos = true;
+		if(Math.abs(end.i - start.i) == 1 || Math.abs(end.j - start.j) == 1)
+			areNeighbors = true;		
+		while(k != end.i || l != end.j)
+		{
+			if( k < 8 && l < 8 && k >= 0 && l >= 0 )
+			{
+				if(arr[k][l] == 0)
+					hasEmptySpaceBetween = true;
+				
+				k += Math.signum(end.i - k);
+				l += Math.signum(end.j - l);
+
+				if(arr[k][l] == arr[start.i][start.j] && ( k != end.i || l != end.j ) )
+					isAnyOfMyNutsBetween = true;
+			}
+			else
+				break;
+		}
+		if(hasCorrectPos && !hasEmptySpaceBetween && !isAnyOfMyNutsBetween && !areNeighbors)
+			return true;
+		else
+			return false;
+	}
+	private void connect(byte arr[][] , Pos start , Pos end)
+	{
+		byte k = start.i , l = start.j;
+		while(k != end.i || l != end.j)
+		{
+			if( k < 8 && l < 8 && k >= 0 && l >= 0)
+			{
+				k += Math.signum(end.i - k);
+				l += Math.signum(end.j - l);
+			
+				arr[k][l] = arr[start.i][start.j];
+				updateBoard();
+			}
+			else
+				break;
+		}	
+	}
+	private Pos[] getPossibleMoves(byte[][] arr , byte turn)
+	{
+		ArrayList<Pos> possibilities = new ArrayList<Pos>();
+		
+		for(byte i=0 ; i < 8 ; i++)
+		{
+			for(byte j=0 ; j < 8 ; j++)
+			{
+				if(arr[i][j] == turn)
+				{
+					for(byte d = 1 ; d < 8 ; d++)
+					{
+						if(i+d < 8 && i+d >= 0)
+						{
+							if(isLegal(arr , new Pos(i,j) , new Pos((byte)(i+d) , j)) )
+							{
+								possibilities.add(new Pos((byte)(i+d) , j));
+							}
+						}
+						if(i-d < 8 && i-d >= 0)
+						{
+							if(isLegal(arr , new Pos(i,j) , new Pos((byte)(i-d) , j)) )
+							{
+								possibilities.add(new Pos((byte)(i-d) , j));
+							}
+						}
+						if(j+d < 8 && j+d > 0)
+						{
+							if(isLegal(arr , new Pos(i,j) , new Pos(i, (byte)(j+d))) )
+							{
+								possibilities.add(new Pos(i, (byte)(j+d)));
+							}
+						}
+						if(j-d < 8 && j-d > 0)
+						{
+							if(isLegal(arr , new Pos(i,j) , new Pos(i, (byte)(j-d))) )
+							{
+								possibilities.add(new Pos(i, (byte)(j-d)));
+							}
+						}
+						if(i+d < 8 && i+d >= 0 && j+d < 8 && j+d > 0)
+						{
+							if(isLegal(arr , new Pos(i,j) , new Pos((byte)(i+d) , (byte)(j+d))) )
+							{
+								possibilities.add(new Pos((byte)(i+d), (byte)(j+d)));
+							}
+						}
+						if(i-d < 8 && i-d >= 0 && j+d < 8 && j+d > 0)
+						{
+							if(isLegal(arr , new Pos(i,j) , new Pos((byte)(i-d) , (byte)(j+d))) )
+							{
+								possibilities.add(new Pos((byte)(i-d), (byte)(j+d)));
+							}
+						}
+						if(i-d < 8 && i-d >= 0 && j-d < 8 && j-d > 0)
+						{
+							if(isLegal(arr , new Pos(i,j) , new Pos((byte)(i-d) , (byte)(j-d))) )
+							{
+								possibilities.add(new Pos((byte)(i-d), (byte)(j-d)));
+							}
+						}
+						if(i+d < 8 && i+d >= 0 && j-d < 8 && j-d > 0)
+						{
+							if(isLegal(arr , new Pos(i,j) , new Pos((byte)(i+d) , (byte)(j-d))) )
+							{
+								possibilities.add(new Pos((byte)(i+d), (byte)(j-d)));
+							}
+						}
+					}
+				}
+			}
+		}
+		return (Pos[])(possibilities.toArray());
+	}
+	
+}
